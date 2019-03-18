@@ -3,6 +3,12 @@
  * finance payment method class
  */
 require_once dirname(__FILE__) . '/financepayment/lib/divido/Divido.php';
+require_once dirname(__FILE__) . '/financepayment/lib/divido/vendor/autoload.php';
+
+use Divido\MerchantSDKGuzzle5\GuzzleAdapter;
+use Divido\MerchantSDK\Environment;
+use Divido\MerchantSDK\HttpClient\HttpClientWrapper;
+
 class financepayment extends base {
   /**
    * $code determines the internal 'code' name used to designate "this" payment module
@@ -49,14 +55,15 @@ class financepayment extends base {
    * @var string the currency enabled in this gateway's merchant account
    */
   private $gateway_currency;
-
+  public $kamilos;
 
   /**
    * Constructor
    */
   function __construct() {
+   
     global $order,$db;
-
+    $this->helper = new FinanceApi();
     $this->code = 'financepayment';
     if (IS_ADMIN_FLAG === true) {
       $this->title = MODULE_PAYMENT_FINANCEPAYMENT_TEXT_ADMIN_TITLE; // Payment module title in Admin
@@ -71,11 +78,17 @@ class financepayment extends base {
     $this->_logDir = defined('DIR_FS_LOGS') ? DIR_FS_LOGS : DIR_FS_SQL_CACHE;
     $this->awaiting_status_name = 'Awaiting Finance response';
     $this->checkApiKeyValidation();
+    
+
+    
+    
   }
 
-  function checkApiKeyValidation() {
+  public function checkApiKeyValidation() {
     global $db;
-    $plans = $this->getAllPlans();
+
+    $plans = $this->helper->getAllPlans( MODULE_PAYMENT_FINANCEPAYMENT_APIKEY); 
+      
     $plans_s = 'array(';
     $status_arr = array();
     foreach ($plans as $key => $value) {
@@ -83,6 +96,8 @@ class financepayment extends base {
       $status_arr[] = $value->text;
     }
     $this->status_arr = $status_arr;
+
+
     if(IS_ADMIN_FLAG === true && strpos($_SERVER['PHP_SELF'],'modules.php')) {
       echo '<script type="text/javascript" src="/includes/modules/payment/financepayment/js/admin.js"></script>';
     }
@@ -96,6 +111,7 @@ class financepayment extends base {
       }
       $db->Execute("UPDATE " . TABLE_CONFIGURATION . " SET configuration_value = '".MODULE_PAYMENT_FINANCEPAYMENT_APIKEY."' WHERE configuration_key = 'MODULE_PAYMENT_FINANCEPAYMENT_APIKEY_HIDDEN'");
     }
+    
   }
   function awaitingStatusExists()
   { 
@@ -116,6 +132,7 @@ class financepayment extends base {
     if ($order->info['payment_module_code'] != $this->code) {
         return;
     }
+
     $orderPaymanet = $db->execute(
         'SELECT * FROM `'.DB_PREFIX.'finance_requests`
         WHERE `order_id` = "'.(int)$oID.'"
@@ -129,18 +146,21 @@ class financepayment extends base {
             'deliveryMethod' => $order->info['shipping_method'],
             'trackingNumber' => '1234',
         );
-        Divido::setMerchant(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
 
-        $response = Divido_Activation::activate($request_data);
-
-        if (isset($response->status) && $response->status == 'ok') {
-            return true;
-        }
-        if (isset($response->error)) {
-            $messageStack->add_session($response->error, 'caution');
-        } else {
-          $messageStack->add_session(MODULE_PAYMENT_FINANCEPAYMENT_TEXT_ACTIVATION_CALL_ERROR, 'caution');
-        }
+    try {
+        $this->helper->activate(
+          $request_data['merchant'],
+          $request_data['application'],
+          $order->info['total'],
+          $oID,
+          $request_data['deliveryMethod'],
+          $request_data['trackingNumber']
+        );
+        return true;
+     } catch(exception $e) {
+      echo $e->getMessage;
+      return;
+      }
     }
   }
 
@@ -210,6 +230,8 @@ class financepayment extends base {
    */
   function selection() {
     global $order;
+    $env = $this->helper->getFinanceEnv(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
+  
     if(empty($this->getCartPlans($order,true)))
       return false;
     if ($this->gateway_mode == 'offsite') {
@@ -217,33 +239,34 @@ class financepayment extends base {
                          'module' => $this->title);
     } else {
       $selection = array('id' => $this->code,
-                         'module' => '<span class="financepayment_title">'.MODULE_PAYMENT_FINANCEPAYMENT_PAYMENT_TITLE.'</span><br>
-                         <script>
-                         var dividoKey = "'.$this->getJsKey().'";
-                         $(document).ready(function() {
-                          $(\'input[name="payment"]\').on("click",function() {
-                            showPop($(this));
-                         })
-                           setTimeout(function() {
-                              showPop($(\'input[name="payment"]:checked\'));
-                           })
-                         })
-                         function showPop(ths){
-                            console.log("booom",ths.val(),ths.is("checked"));
-                            if(ths.val() == "financepayment") {
-                              $("#divido-checkout").slideDown();
-                            } else {
-                              $("#divido-checkout").slideUp();
-                            }
-                         }
-                         </script>
-                         <input type="hidden" name="divido_total" value="'.$order->info["total"].'">
-                         <script type="text/javascript" src="https://cdn.divido.com/calculator/v2.1/production/js/template.divido.js"></script>
-                         <div id="divido-checkout" style="display:none;">
-    <div data-divido-widget data-divido-prefix="'.MODULE_PAYMENT_FINANCEPAYMENT_PREFIX.'" data-divido-suffix="'.MODULE_PAYMENT_FINANCEPAYMENT_SUFIX.'" data-divido-title-logo data-divido-amount="'.$order->info["total"].'" data-divido-apply="true" data-divido-apply-label="Apply Now" data-divido-plans = "'.$this->getCartPlans($order,true).'"></div></div>',
-                        );
-    }
-    return $selection;
+      'module' => '<span class="financepayment_title">'.MODULE_PAYMENT_FINANCEPAYMENT_PAYMENT_TITLE.'</span><br>
+      <script>
+      var '.$env.'Key = "'.$this->getJsKey().'";
+      $(document).ready(function() {
+       $(\'input[name="payment"]\').on("click",function() {
+         showPop($(this));
+      })
+        setTimeout(function() {
+           showPop($(\'input[name="payment"]:checked\'));
+        })
+      })
+      function showPop(ths){
+         console.log("booom",ths.val(),ths.is("checked"));
+         if(ths.val() == "financepayment") {
+           $("#divido-checkout").slideDown();
+           console.log("booooooom");
+         } else {
+           $("#divido-checkout").slideUp();
+         }
+      }
+      </script>
+      <input type="hidden" name="divido_total" value="'.$order->info["total"].'">
+      <script type="text/javascript" src="https://cdn.divido.com/calculator/v2.1/production/js/template.'.$env.'.js"></script>
+      <div id="divido-checkout" style="display:none;">
+<div data-'.$env.'-widget data-'.$env.'-prefix="'.MODULE_PAYMENT_FINANCEPAYMENT_PREFIX.'" data-'.$env.'-suffix="'.MODULE_PAYMENT_FINANCEPAYMENT_SUFIX.'" data-'.$env.'-amount="'.$order->info["total"].'" data-'.$env.'-apply="true" data-'.$env.'-apply-label="Apply Now" data-'.$env.'-plans = "'.$this->getCartPlans($order,true).'"></div></div>',
+     );
+}
+return $selection;
   }
   /**
    * Evaluates the Credit Card Type for acceptance and the validity of the Credit Card Number & Expiration Date
@@ -321,9 +344,8 @@ class financepayment extends base {
   }
 
   function getConfirmation()
-  {
+  { 
       global $order, $order_totals;
-      Divido::setApiKey(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
       $deposit = $_SESSION['finance_deposit'];
       $finance = $_SESSION['finance_plan'];
       $cart = $_SESSION['cart'];
@@ -331,7 +353,7 @@ class financepayment extends base {
       $address = $order->billing;
       $country = $order->billing['country']['iso_code_2'];
 
-      $language = strtoupper($_SESSION['languages_code']);
+      $language = $_SESSION['languages_code'];
       $currency = $_SESSION['currency'];
 
       $cart_id = $_SESSION['cartID'];
@@ -345,10 +367,9 @@ class financepayment extends base {
       $products  = array();
       foreach ($order->products as $product) {
           $products[] = array(
-              'type' => 'product',
-              'text' => $product['name'],
+              'name' => $product['name'],
               'quantity' => $product['qty'],
-              'value' => $product['final_price'],
+              'price' => $product['final_price']*100,
           );
       }
 
@@ -358,20 +379,16 @@ class financepayment extends base {
       $disounts = $_SESSION['total_dicount'];
 
       $products[] = array(
-          'type'     => 'product',
-          'text'     => 'Shipping & Handling',
+          'name'     => 'Shipping & Handling',
           'quantity' => 1,
-          'value'    => $shiphandle,
+          'price'    => $shiphandle*100,
       );
 
       $products[] = array(
-          'type'     => 'product',
-          'text'     => 'Discount',
+          'name'     => 'Discount',
           'quantity' => 1,
-          'value'    => "-".$disounts,
+          'price'    => -$disounts*100,
       );
-
-      $deposit_amount = zen_round(($deposit / 100) * $sub_total-$disounts, 2);
 
       $response_url = zen_href_link('finance_main_handler.php', 'type=financepayment&response=1', 'SSL', true,true, true);
       $redirect_url = zen_href_link('finance_main_handler.php', 'type=financepayment&confirmation=1&cartID='.$cart_id, 'SSL', true,true, true);
@@ -385,53 +402,76 @@ class financepayment extends base {
       $salt = uniqid('', true);
       $hash = hash('sha256', $cart_id.$salt);
 
-      $request_data = array(
-          'merchant' => MODULE_PAYMENT_FINANCEPAYMENT_APIKEY,
-          'deposit'  => $deposit_amount,
-          'finance'  => $finance,
-          'country'  => $country,
-          'language' => $language,
-          'currency' => $currency,
-          'metadata' => array(
-              'cart_id' => $cart_id,
-              'cart_hash' => $hash,
-              'order_id' => $order_id,
-          ),
-          'customer' => array(
-              'title'         => '',
-              'first_name'    => $firstname,
-              'middle_name'   => '',
-              'last_name'     => $lastname,
-              'country'       => $country,
-              'postcode'      => $postcode,
-              'email'         => $email,
-              'mobile_number' => '',
-              'phone_number'  => $telephone,
-              'address' => array(
-                  'text' => $address['street_address']." ".$address['suburb'].
-                      " ".$address['city']." ".$address['postcode'],
-              ),
-          ),
-          'products' => $products,
-          'response_url' => htmlspecialchars_decode($response_url),
-          'redirect_url' => htmlspecialchars_decode($redirect_url),
-          'checkout_url' => htmlspecialchars_decode($checkout_url),
-      );
-      $response = Divido_CreditRequest::create($request_data);
-      if ($response->status == 'ok') {
+          $env                       = $this->helper->getEnvironment( MODULE_PAYMENT_FINANCEPAYMENT_APIKEY );
+					$client                    = new \GuzzleHttp\Client();
+					
+					$httpClientWrapper = new \Divido\MerchantSDK\HttpClient\HttpClientWrapper(
+						new \Divido\MerchantSDKGuzzle6\GuzzleAdapter($client),
+						\Divido\MerchantSDK\Environment::CONFIGURATION[$env]['base_uri'],
+						MODULE_PAYMENT_FINANCEPAYMENT_APIKEY
+					);
+
+					$sdk = new \Divido\MerchantSDK\Client($httpClientWrapper, $env);
+					$application               = ( new \Divido\MerchantSDK\Models\Application() )
+						->withCountryId( $country )
+						->withCurrencyId( $currency )
+						->withLanguageId( $language )
+						->withFinancePlanId( $finance )
+						->withApplicants(
+							[
+								[
+									'firstName'   => $firstname,
+									'lastName'    => $lastname,
+									'phoneNumber' => $telephone,
+									'email'       => $email,
+									'addresses'   => array(
+										[
+											'text' => $address['street_address']." ".$address['suburb'].
+                      " ".$address['city']." ".$address['postcode']
+
+										],
+									),
+								],
+							]
+						)
+						->withOrderItems( $products )
+						->withDepositPercentage($deposit/100)
+						->withFinalisationRequired( false )
+						->withMerchantReference( '' )
+						->withUrls(
+							[
+								'merchant_redirect_url' => htmlspecialchars_decode($redirect_url),
+								'merchant_checkout_url' => htmlspecialchars_decode($checkout_url),
+								'merchant_response_url' => htmlspecialchars_decode($response_url),
+							]
+						)
+						->withMetadata(
+							[
+								'order_number' => $order_id,
+							]
+						);
+						
+					$response                  = $sdk->applications()->createApplication( $application, [], ['Content-Type' => 'application/json']);
+					$application_response_body = $response->getBody()->getContents();
+					$decode                    = json_decode( $application_response_body );
+					$result_id                 = $decode->data->id;
+          $result_redirect           = $decode->data->urls->application_url;
+
+
+      if (true) {
         $_SESSION['order_id'] = $order_id;
-        $this->saveHash($cart_id,$hash,$sub_total,$order_id,$response->id);
+        $this->saveHash($cart_id,$hash,$sub_total,$order_id,$result_id);
         unset($_SESSION['cartID']);
         unset($_SESSION['cart']);
           $data = array(
               'status' => true,
-              'url'    => $response->url,
+              'url'    => $result_redirect,
           );
-          $this->transaction_id = $response->id;
+          $this->transaction_id = $result_id;
       } else {
           $data = array(
               'status'  => false,
-              'message' => $response->error,
+              'message' => $response->data->error,
           );
       }
       return $data;
@@ -665,25 +705,7 @@ class financepayment extends base {
   function keys() {
     return array('MODULE_PAYMENT_FINANCEPAYMENT_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_APIKEY','MODULE_PAYMENT_FINANCEPAYMENT_PAYMENT_TITLE','MODULE_PAYMENT_FINANCEPAYMENT_SORT_ORDER','MODULE_PAYMENT_FINANCEPAYMENT_USE_ACTIVATIONCALL','MODULE_PAYMENT_FINANCEPAYMENT_ACTIVATION_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_PLAN','MODULE_PAYMENT_FINANCEPAYMENT_WIDGET','MODULE_PAYMENT_FINANCEPAYMENT_PRODUCT_CALCULATOR','MODULE_PAYMENT_FINANCEPAYMENT_PREFIX','MODULE_PAYMENT_FINANCEPAYMENT_SUFIX','MODULE_PAYMENT_FINANCEPAYMENT_WHOLE_CART','MODULE_PAYMENT_FINANCEPAYMENT_MIN_CART','MODULE_PAYMENT_FINANCEPAYMENT_PRODUCT_SELECTION','MODULE_PAYMENT_FINANCEPAYMENT_MIN_PRODUCT','MODULE_PAYMENT_FINANCEPAYMENT_AWAITING_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_ACCEPTED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_DEPOSIT-PAID_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_SIGNED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_READY_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_ACTION-LENDER_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_CANCELED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_COMPLETED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_DECLINED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_DEFERRED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_REFERRED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_FULFILLED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_APIKEY_HIDDEN');
   }
-
-  //get Finance plans for payment
-public function getGlobalSelectedPlans()
-{
-    $all_plans = $this->getAllPlans();
-    $selected_plans = explode(', ', MODULE_PAYMENT_FINANCEPAYMENT_PLAN);
-    if (!$selected_plans) {
-        return array();
-    }
-
-    $plans = array();
-    foreach ($all_plans as $plan) {
-        if (in_array($plan->text, $selected_plans)) {
-            $plans[$plan->id] = $plan;
-        }
-    }
-
-    return $plans;
-}
+  
 
 public function getSelectedPlansString($products_id,$product_price = 0)
 {
@@ -704,54 +726,20 @@ public function getJsKey()
 public function getPlans($default_plans = false)
     {
         if ($default_plans) {
-            $plans = $this->getGlobalSelectedPlans();
+            $plans = $this->helper->getGlobalSelectedPlans(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY, MODULE_PAYMENT_FINANCEPAYMENT_PLAN );
         } else {
-            $plans = $this->getAllPlans();
+            $plans = $this->helper->getAllPlans(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY); 
         }
-
         return $plans;
     }
 public function getPlanTextById($id)
 {
   if($id == '')
     return '';
-  $plan = $this->getGlobalSelectedPlans();
+  $plan = $this->helper->getGlobalSelectedPlans(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY, MODULE_PAYMENT_FINANCEPAYMENT_PLAN );
   return isset($plan[$id]) ? $plan[$id]->text : '';
 }
 
-public function getAllPlans()
-{
-    if (!MODULE_PAYMENT_FINANCEPAYMENT_APIKEY) {
-        return array();
-    }
-
-    Divido::setMerchant(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
-
-    $response = Divido_Finances::all();
-    if ($response->status != 'ok') {
-        return array();
-    }
-
-    $plans = $response->finances;
-
-    $plans_plain = array();
-    foreach ($plans as $plan) {
-        $plan_copy = new stdClass();
-        $plan_copy->id                 = $plan->id;
-        $plan_copy->text               = $plan->text;
-        $plan_copy->country            = $plan->country;
-        $plan_copy->min_amount         = $plan->min_amount;
-        $plan_copy->min_deposit        = $plan->min_deposit;
-        $plan_copy->max_deposit        = $plan->max_deposit;
-        $plan_copy->interest_rate      = $plan->interest_rate;
-        $plan_copy->deferral_period    = $plan->deferral_period;
-        $plan_copy->agreement_duration = $plan->agreement_duration;
-
-        $plans_plain[$plan->id] = $plan_copy;
-    }
-
-    return $plans_plain;
-}
 public function getProductPlans($product_price, $products_id)
 {
     if(!$this->enabled)
