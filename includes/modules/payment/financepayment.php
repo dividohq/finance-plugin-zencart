@@ -458,7 +458,7 @@ return $selection;
           $result_redirect           = $decode->data->urls->application_url;
 
 
-      if (true) {
+      try {
         $_SESSION['order_id'] = $order_id;
         $this->saveHash($cart_id,$hash,$sub_total,$order_id,$result_id);
         unset($_SESSION['cartID']);
@@ -468,7 +468,7 @@ return $selection;
               'url'    => $result_redirect,
           );
           $this->transaction_id = $result_id;
-      } else {
+      } catch(Exception $e) {
           $data = array(
               'status'  => false,
               'message' => $response->data->error,
