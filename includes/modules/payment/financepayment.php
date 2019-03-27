@@ -77,9 +77,10 @@ class financepayment extends base {
 
     $this->_logDir = defined('DIR_FS_LOGS') ? DIR_FS_LOGS : DIR_FS_SQL_CACHE;
     $this->awaiting_status_name = 'Awaiting Finance response';
-    $this->checkApiKeyValidation();
-    
-
+    if(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "MODULE_PAYMENT_FINANCEPAYMENT_APIKEY"){
+      $this->checkApiKeyValidation();
+  }
+  
     
     
   }
