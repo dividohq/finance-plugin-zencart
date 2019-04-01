@@ -74,12 +74,9 @@ class financepayment extends base {
     $this->_logDir = defined('DIR_FS_LOGS') ? DIR_FS_LOGS : DIR_FS_SQL_CACHE;
     $this->awaiting_status_name = 'Awaiting Finance response';
     
-    if(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != ("" && "MODULE_PAYMENT_FINANCEPAYMENT_APIKEY")){  
+    if(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "" && MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "MODULE_PAYMENT_FINANCEPAYMENT_APIKEY"){  
       $this->checkApiKeyValidation();
     }
-  
-    
-    
   }
 
   public function checkApiKeyValidation() {
@@ -562,7 +559,7 @@ return $selection;
     if(!empty($res->fields))
       return false;
     //MODULE_PAYMENT_FINANCEPAYMENT_USE_ACTIVATIONCALL
-    $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order,set_function, date_added) values ('Enable/Disable activation call functionality', 'MODULE_PAYMENT_FINANCEPAYMENT_USE_ACTIVATIONCALL', 'True', 'Use Finance activation call functionality', '6', 'False', 'zen_cfg_select_option(array(\'True\', \'False\'), ', now())");
+    $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order,set_function, date_added) values ('Enable/Disable activation call functionality', 'MODULE_PAYMENT_FINANCEPAYMENT_USE_ACTIVATIONCALL', 'True', 'Use Finance activation call functionality', '6', '0', 'zen_cfg_select_option(array(\'True\', \'False\'), ', now())");
 
     $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('Set Order Status', 'MODULE_PAYMENT_FINANCEPAYMENT_ACTIVATION_STATUS', '2', 'Order status to make Finance Payment activation call', '6', '0', 'zen_cfg_pull_down_order_statuses(', 'zen_get_order_status_name', now())");
     
