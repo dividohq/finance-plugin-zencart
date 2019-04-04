@@ -157,7 +157,7 @@ class financepayment extends base {
       if ($result->RecordCount()) {
           $db->Execute('UPDATE '.DB_PREFIX.'finance_product SET `plans` = "'.$plans.'" WHERE `products_id` = '.(int)$id);
       } else {
-          $db->Execute('INSERT INTO '.DB_PREFIX.'finance_product (`plans`,`products_id`) VALUES ("'.$plans.'","'.$id.'")');
+          $db->Execute('INSERT INTO '.DB_PREFIX.'finance_product (`plans`,`products_id`, `display`) VALUES ("'.$plans.'","'.$id.'","")');
       }
 
   }
