@@ -169,10 +169,10 @@ class financepayment extends base {
       $plans = implode(',', $plans_str);
       global $db;
       $result = $db->Execute("select * from `".DB_PREFIX."finance_product` where products_id = '".(int)$id."'");
-      if ($result->RecordCount()) {
+     if ($result->RecordCount()) {
           $db->Execute('UPDATE '.DB_PREFIX.'finance_product SET `plans` = "'.$plans.'" WHERE `products_id` = '.(int)$id);
       } else {
-          $db->Execute('INSERT INTO '.DB_PREFIX.'finance_product (`plans`,`products_id`) VALUES ("'.$plans.'","'.$id.'")');
+          $db->Execute('INSERT INTO '.DB_PREFIX.'finance_product (`plans`,`products_id`, `display`) VALUES ("'.$plans.'","'.$id.'","")');
       }
 
   }
