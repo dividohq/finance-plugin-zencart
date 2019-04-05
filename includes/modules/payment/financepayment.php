@@ -394,7 +394,7 @@ return $selection;
       $order->info['payment_module_code'] = $this->code;
       $order_id = $order->create($order_totals);
       // store the product info to the order
-    $order->create_add_products($order_id);
+      $order->create_add_products($order_id);
       $order->info['order_status'] = MODULE_PAYMENT_FINANCEPAYMENT_AWAITING_STATUS;
       $salt = uniqid('', true);
       $hash = hash('sha256', $cart_id.$salt);
