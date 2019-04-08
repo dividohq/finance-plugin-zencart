@@ -4,21 +4,28 @@
  */
 require('includes/application_top.php');
 require(DIR_WS_MODULES . 'payment/financepayment.php');
+//require(DIR_WS_MODULES . 'payment/financepayment/lib/divido/Divido.php');
+
 $finance = new financepayment();
+$payment = new FinanceApi();
+$env     = $payment->getFinanceEnv(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
+
 if(isset($_POST['action']) && $_POST['action'] == 'getCalculatorWidget' && $_POST['products_id'] > 0) {
     $price = zen_get_products_base_price((int)$_POST['products_id']);
   $plans = $finance->getSelectedPlansString((int)$_POST['products_id'],(int)$price);
   $widgets = array();
   if($plans != '') {
     $widgets['js'] = $finance->getJsKey();
-    $widgets['jsSrc'] = "https://cdn.divido.com/calculator/v2.1/production/js/template.divido.js";
+    $widgets['jsSrc'] = "https://cdn.divido.com/calculator/v2.1/production/js/template.$env.js";
     if(MODULE_PAYMENT_FINANCEPAYMENT_PRODUCT_CALCULATOR == 'True') {
-      $widgets['calculator'] = '<div data-divido-widget data-divido-prefix="'.MODULE_PAYMENT_FINANCEPAYMENT_PREFIX.'" data-divido-suffix="'.MODULE_PAYMENT_FINANCEPAYMENT_SUFIX.'" data-divido-title-logo data-divido-amount="'.$price.'" data-divido-apply="true" data-divido-apply-label="Apply Now" data-divido-plans ="'.$plans.'"></div>';
+      $widgets['calculator'] = '<div data-'.$env.'-widget data-'.$env.'-prefix="'.MODULE_PAYMENT_FINANCEPAYMENT_PREFIX.'" data-'.$env.'-suffix="'.MODULE_PAYMENT_FINANCEPAYMENT_SUFIX.'"  data-'.$env.'-amount="'.$price.'" data-'.$env.'-apply="true" data-'.$env.'-apply-label="Apply Now" data-'.$env.'-plans ="'.$plans.'"></div>';
     }
     if(MODULE_PAYMENT_FINANCEPAYMENT_WIDGET == 'True') {
-      $widgets['widget'] = '<div data-divido-widget data-divido-mode="popup" data-divido-prefix="'.MODULE_PAYMENT_FINANCEPAYMENT_PREFIX.'" data-divido-suffix="'.MODULE_PAYMENT_FINANCEPAYMENT_SUFIX.'" data-divido-title-logo data-divido-amount="'.$price.'" data-divido-apply="true" data-divido-apply-label="Apply Now" data-divido-plans ="'.$plans.'"></div>';
+      $widgets['widget'] = '<div data-'.$env.'-widget data-'.$env.'-mode="popup" data-'.$env.'-prefix="'.MODULE_PAYMENT_FINANCEPAYMENT_PREFIX.'" data-'.$env.'-suffix="'.MODULE_PAYMENT_FINANCEPAYMENT_SUFIX.'" data-'.$env.'-amount="'.$price.'" data-'.$env.'-apply="true" data-'.$env.'-apply-label="Apply Now" data-'.$env.'-plans ="'.$plans.'"></div>';
     }
   }
+ // var_dump($widgets);
+
   die(json_encode($widgets));
 }
 

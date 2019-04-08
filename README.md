@@ -1,3 +1,11 @@
+Author URI:        integrations.divido.com
+Author:            Divido Financial Services Ltd
+Requires at least: 1.5.4
+Tested up to:      1.5.6a
+Stable tag:        1.0.0
+Version:           1.0.0
+
+
  -----------------
 Installation Notes      
 ------------------
@@ -50,3 +58,7 @@ b) You need to open the collect_info.php under your admin/includes/modules/produ
    ?>
 <!-- Finance payment module end -->
 ```
+
+
+ == Changelog ==
+Version 1.0.0 Initial Release
