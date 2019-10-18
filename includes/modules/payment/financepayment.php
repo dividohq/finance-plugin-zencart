@@ -57,7 +57,7 @@ class financepayment extends base {
    * Constructor
    */
   function __construct() {
-   
+
     global $order,$db;
     $this->helper = new FinanceApi();
     $this->code = 'financepayment';
@@ -73,8 +73,8 @@ class financepayment extends base {
 
     $this->_logDir = defined('DIR_FS_LOGS') ? DIR_FS_LOGS : DIR_FS_SQL_CACHE;
     $this->awaiting_status_name = 'Awaiting Finance response';
-    
-    if(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "" && MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "MODULE_PAYMENT_FINANCEPAYMENT_APIKEY"){  
+
+    if(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "" && MODULE_PAYMENT_FINANCEPAYMENT_APIKEY != "MODULE_PAYMENT_FINANCEPAYMENT_APIKEY"){
       $this->checkApiKeyValidation();
     }
   }
@@ -82,8 +82,8 @@ class financepayment extends base {
   public function checkApiKeyValidation() {
     global $db;
 
-    $plans = $this->helper->getAllPlans( MODULE_PAYMENT_FINANCEPAYMENT_APIKEY); 
-      
+    $plans = $this->helper->getAllPlans( MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
+
     $plans_s = 'array(';
     $status_arr = array();
     foreach ($plans as $key => $value) {
@@ -106,10 +106,10 @@ class financepayment extends base {
       }
       $db->Execute("UPDATE " . TABLE_CONFIGURATION . " SET configuration_value = '".MODULE_PAYMENT_FINANCEPAYMENT_APIKEY."' WHERE configuration_key = 'MODULE_PAYMENT_FINANCEPAYMENT_APIKEY_HIDDEN'");
     }
-    
+
   }
   function awaitingStatusExists()
-  { 
+  {
     global $db;
     $res = $db->Execute("SELECT orders_status_id FROM ".TABLE_ORDERS_STATUS." WHERE orders_status_name ='".$this->awaiting_status_name."'");
     if(!empty($res->fields) && $res->fields['orders_status_id'] > 0)
@@ -160,7 +160,7 @@ class financepayment extends base {
   }
 
   function updatePlans($id,$plans)
-  { 
+  {
       $plans = explode(',', $plans);
       $plans_str = array();
       foreach ($plans as $key => $value) {
@@ -176,9 +176,9 @@ class financepayment extends base {
       }
 
   }
- 
 
-  
+
+
   /**
    * compute HMAC-MD5
    *
@@ -228,7 +228,7 @@ class financepayment extends base {
   function selection() {
     global $order;
     $env = $this->helper->getFinanceEnv(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
-  
+
     if(empty($this->getCartPlans($order,true)))
       return false;
     if ($this->gateway_mode == 'offsite') {
@@ -341,7 +341,7 @@ return $selection;
   }
 
   function getConfirmation()
-  { 
+  {
       global $order, $order_totals;
       $deposit = $_SESSION['finance_deposit'];
       $finance = $_SESSION['finance_plan'];
@@ -401,7 +401,7 @@ return $selection;
 
           $env                       = $this->helper->getEnvironment( MODULE_PAYMENT_FINANCEPAYMENT_APIKEY );
 					$client                    = new \GuzzleHttp\Client();
-					
+
 					$httpClientWrapper = new \Divido\MerchantSDK\HttpClient\HttpClientWrapper(
 						new \Divido\MerchantSDKGuzzle6\GuzzleAdapter($client),
 						\Divido\MerchantSDK\Environment::CONFIGURATION[$env]['base_uri'],
@@ -447,7 +447,7 @@ return $selection;
 								'order_number' => $order_id,
 							]
 						);
-						
+
 					$response                  = $sdk->applications()->createApplication( $application, [], ['Content-Type' => 'application/json']);
 					$application_response_body = $response->getBody()->getContents();
 					$decode                    = json_decode( $application_response_body );
@@ -564,7 +564,7 @@ return $selection;
     $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order,set_function, date_added) values ('Enable/Disable activation call functionality', 'MODULE_PAYMENT_FINANCEPAYMENT_USE_ACTIVATIONCALL', 'True', 'Use Finance activation call functionality', '6', '0', 'zen_cfg_select_option(array(\'True\', \'False\'), ', now())");
 
     $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('Set Order Status', 'MODULE_PAYMENT_FINANCEPAYMENT_ACTIVATION_STATUS', '2', 'Order status to make Finance Payment activation call', '6', '0', 'zen_cfg_pull_down_order_statuses(', 'zen_get_order_status_name', now())");
-    
+
     //payment title MODULE_PAYMENT_FINANCEPAYMENT_PAYMENT_TITLE
     $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Finance Payment module\'s title', 'MODULE_PAYMENT_FINANCEPAYMENT_PAYMENT_TITLE', 'Finance module', 'The Title used for the Finance payment service', '6', '0', now())");
 
@@ -655,7 +655,7 @@ return $selection;
   }
 
   function removeAwaitingStatus()
-  { 
+  {
     global $db;
     $db->Execute("delete from " . TABLE_ORDERS_STATUS . "
                       where orders_status_name = '" . zen_db_prepare_input($this->awaiting_status_name) . "'");
@@ -702,7 +702,7 @@ return $selection;
   function keys() {
     return array('MODULE_PAYMENT_FINANCEPAYMENT_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_APIKEY','MODULE_PAYMENT_FINANCEPAYMENT_PAYMENT_TITLE','MODULE_PAYMENT_FINANCEPAYMENT_SORT_ORDER','MODULE_PAYMENT_FINANCEPAYMENT_USE_ACTIVATIONCALL','MODULE_PAYMENT_FINANCEPAYMENT_ACTIVATION_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_PLAN','MODULE_PAYMENT_FINANCEPAYMENT_WIDGET','MODULE_PAYMENT_FINANCEPAYMENT_PRODUCT_CALCULATOR','MODULE_PAYMENT_FINANCEPAYMENT_PREFIX','MODULE_PAYMENT_FINANCEPAYMENT_SUFIX','MODULE_PAYMENT_FINANCEPAYMENT_WHOLE_CART','MODULE_PAYMENT_FINANCEPAYMENT_MIN_CART','MODULE_PAYMENT_FINANCEPAYMENT_PRODUCT_SELECTION','MODULE_PAYMENT_FINANCEPAYMENT_MIN_PRODUCT','MODULE_PAYMENT_FINANCEPAYMENT_AWAITING_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_ACCEPTED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_DEPOSIT-PAID_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_SIGNED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_READY_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_ACTION-LENDER_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_CANCELED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_COMPLETED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_DECLINED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_DEFERRED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_REFERRED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_FULFILLED_STATUS','MODULE_PAYMENT_FINANCEPAYMENT_APIKEY_HIDDEN');
   }
-  
+
 
 public function getSelectedPlansString($products_id,$product_price = 0)
 {
@@ -725,7 +725,7 @@ public function getPlans($default_plans = false)
         if ($default_plans) {
             $plans = $this->helper->getGlobalSelectedPlans(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY, MODULE_PAYMENT_FINANCEPAYMENT_PLAN );
         } else {
-            $plans = $this->helper->getAllPlans(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY); 
+            $plans = $this->helper->getAllPlans(MODULE_PAYMENT_FINANCEPAYMENT_APIKEY);
         }
         return $plans;
     }
@@ -826,7 +826,7 @@ public static function getProductSettings($products_id)
   function getProductOptionsAdmin($products_id)
   {
     $before_s = '';
-    if($products_id) { 
+    if($products_id) {
       $before_s = '<tr><td colspan="2">'.zen_draw_separator("pixel_black.gif", "100%", "3").'</td></tr><tr>';
       $selected_plans = $this->getProductSettings($products_id);
       $selected_plans = $selected_plans->fields['plans'];

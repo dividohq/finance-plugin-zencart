@@ -38,7 +38,7 @@ global $db,$order,$messageStack,$zco_notifier,$order_totals;
 /**
 *Order status change according to the response from the Payment server.
 */
-if (isset($_GET['type']) && $_GET['type'] == 'financepayment' && isset($_GET['response'])) {  
+if (isset($_GET['type']) && $_GET['type'] == 'financepayment' && isset($_GET['response'])) {
   $input = file_get_contents('php://input');
   $data  =  json_decode($input);
   if (!isset($data->status) || !isset($data->metadata->cart_id)) {
@@ -153,4 +153,4 @@ if (isset($_GET['type']) && $_GET['type'] == 'financepayment' && isset($_GET['re
       $_SESSION['order_summary']['products_ordered_models'] = implode('|', array_values($products_array));
       $zco_notifier->notify('NOTIFY_CHECKOUT_PROCESS_HANDLE_AFFILIATES');
       zen_redirect(zen_href_link(FILENAME_CHECKOUT_SUCCESS, 'confirm', 'SSL'));
-} 
+}
