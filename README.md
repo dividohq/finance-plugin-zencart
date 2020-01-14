@@ -1,7 +1,7 @@
 Author URI:        integrations.divido.com
 Author:            Divido Financial Services Ltd
 Requires at least: 1.5.4
-Tested up to:      1.5.6a
+Tested up to:      1.5.6c
 Stable tag:        1.0.0
 Version:           1.0.0
 
