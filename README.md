@@ -12,7 +12,8 @@ Installation Notes
 
 
 
-1. Copy the includes folder to your zencart folder. This contains all the required module files, Do not overwrite any original files while copying.
+1. Download the release from our release page and copy the includes folder to your zencart folder. This contains all the required module files, Do not overwrite any original files while copying. 
+If you download the module by cloning the repository you will also need to run `composer install` within the `includes/modules/payment/financepayment/lib/divido` directory. 
 
 
 
