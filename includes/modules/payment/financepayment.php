@@ -36,6 +36,8 @@ class financepayment extends base {
    * @var string
    */
   var $_logDir = '';
+
+  var $plugn_version;
   /**
    * vars
    */
@@ -51,7 +53,6 @@ class financepayment extends base {
    * @var string the currency enabled in this gateway's merchant account
    */
   private $gateway_currency;
-  public $kamilos;
 
   /**
    * Constructor
@@ -61,6 +62,7 @@ class financepayment extends base {
     global $order,$db;
     $this->helper = new FinanceApi();
     $this->code = 'financepayment';
+    $this->plugin_version = '1.1.0';
     if (IS_ADMIN_FLAG === true) {
       $this->title = MODULE_PAYMENT_FINANCEPAYMENT_TEXT_ADMIN_TITLE; // Payment module title in Admin
 
@@ -434,7 +436,7 @@ return $selection;
 						->withOrderItems( $products )
 						->withDepositPercentage($deposit/100)
 						->withFinalisationRequired( false )
-						->withMerchantReference( '' )
+						->withMerchantReference( strval($order_id) )
 						->withUrls(
 							[
 								'merchant_redirect_url' => htmlspecialchars_decode($redirect_url),
@@ -444,6 +446,10 @@ return $selection;
 						)
 						->withMetadata(
 							[
+                'ecom_platform'         => 'zencart',
+                'ecom_platform_version' => PROJECT_VERSION_MAJOR . '.'. PROJECT_VERSION_MINOR,
+                'ecom_base_url'         => htmlspecialchars_decode($checkout_url),
+                'plugin_version'        => $this->plugin_version,
 								'order_number' => $order_id,
 							]
 						);

@@ -6,9 +6,9 @@ Requires at least: 1.5.4
 
 Tested up to:      1.5.6c
 
-Stable tag:        1.0.0
+Stable tag:        1.1.0
 
-Version:           1.0.0
+Version:           1.1.0
 
 
  -----------------
@@ -67,4 +67,8 @@ b) You need to open the collect_info.php under your admin/includes/modules/produ
 
 
  == Changelog ==
+Version 1.1.0 
+Feat - Add merchant ref value
+Feat - Additional Metadata
+
 Version 1.0.0 Initial Release
